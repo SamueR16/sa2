@@ -21,6 +21,18 @@ def create_ps3_structure(project_root, build_name):
     else:
         print(f"Warning: {self_path} not found. Did you build it?")
 
+    # PARAM.SFO
+    sfo_path = os.path.join(project_root, "build", "PARAM.SFO")
+    if os.path.exists(sfo_path):
+        shutil.copy2(sfo_path, os.path.join(ps3_dir, "PARAM.SFO"))
+        print("Copied PARAM.SFO to package root")
+
+    # ICON0.PNG
+    icon_path = os.path.join(project_root, "build", "ICON0.PNG")
+    if os.path.exists(icon_path):
+        shutil.copy2(icon_path, os.path.join(ps3_dir, "ICON0.PNG"))
+        print("Copied ICON0.PNG to package root")
+
     # Assets (we would copy pre-converted textures here)
     # Example:
     # assets_src = os.path.join(project_root, "build", "ps3", "assets")
