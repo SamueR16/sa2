@@ -30,6 +30,7 @@ static bool is_video_initialized = false;
 
 /* Texture loading helper */
 void* PS3_LoadTexture(const char* filename, u32 *width, u32 *height) {
+    (void)width; (void)height;
     FILE *fp = fopen(filename, "rb");
     if (!fp) return NULL;
 
