@@ -9,7 +9,7 @@ jobs:
   build-ps3:
     runs-on: ubuntu-latest
     container:
-      image: hugoabbad/psl1ght
+      image: bucanero/ps3dev:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
