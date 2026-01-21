@@ -241,7 +241,7 @@ else
 	else ifeq ($(PLATFORM),ps3)
 		CPPFLAGS += -D TITLE_BAR=$(BUILD_NAME).$(PLATFORM) -D PLATFORM_GBA=0 -D PLATFORM_SDL=0 -D PLATFORM_WIN32=0 -D PLATFORM_PS3=1
 		CPPFLAGS += -I$(PSL1GHT)/ppu/include -I$(PSL1GHT)/ppu/include/tiny3d
-		CC1FLAGS += -Wno-error
+		CC1FLAGS := $(filter-out -Werror,$(CC1FLAGS)) -Wno-error
 	endif
 
 	ifeq ($(CPU_ARCH),i386)
