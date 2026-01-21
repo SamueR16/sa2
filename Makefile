@@ -52,6 +52,8 @@ else ifeq ($(CPU_ARCH),i386)
     TOOLCHAIN := /usr/x86_64-w64-mingw32/
     PREFIX := x86_64-w64-mingw32-
   endif
+else ifeq ($(PLATFORM),ps3)
+  PREFIX := ppu-
 else
 # Native
   ifneq ($(PLATFORM),sdl)
@@ -120,6 +122,10 @@ else ifeq ($(PLATFORM),sdl)
 ROM      := $(BUILD_NAME).sdl
 ELF      := $(ROM).elf
 MAP      := $(ROM).map
+else ifeq ($(PLATFORM),ps3)
+ROM      := $(BUILD_NAME).self
+ELF      := $(ROM:.self=.elf)
+MAP      := $(ROM:.self=.map)
 else
 ROM      := $(BUILD_NAME).$(PLATFORM).exe
 ELF      := $(ROM:.exe=.elf)
@@ -161,6 +167,9 @@ else ifeq ($(PLATFORM),sdl_win32)
 C_SRCS := $(shell find $(C_SUBDIR) -name "*.c" -not -path "*/platform/win32/*")
 else ifeq ($(PLATFORM),win32)
 C_SRCS := $(shell find $(C_SUBDIR) -name "*.c" -not -path "*/platform/pret_sdl/*")
+else ifeq ($(PLATFORM),ps3)
+C_SRCS := $(shell find $(C_SUBDIR) -name "*.c" -not -path "*/platform/win32/*" -not -path "*/platform/pret_sdl/*")
+C_SRCS += $(shell find src/port/ps3 -name "*.c")
 else
 C_SRCS := $(shell find $(C_SUBDIR) -name "*.c")
 endif
@@ -201,7 +210,7 @@ FORMAT_H_PATHS   := $(shell find . -name "*.h" ! -path '*/build/*' ! -path '*/ex
 # -I sets an include path
 # -D defines a symbol
 CPPFLAGS ?= $(INCLUDE_CPP_ARGS) -D $(GAME_REGION)
-CC1FLAGS ?= -Wimplicit -Wparentheses -Werror
+CC1FLAGS ?= -Wimplicit -Wparentheses
 
 ifneq ($(GAME_VARIANT), DEFAULT)
 	CPPFLAGS += -D $(GAME_VARIANT)
@@ -229,6 +238,11 @@ else
 		CPPFLAGS += -D TITLE_BAR=$(BUILD_NAME).$(PLATFORM) -D PLATFORM_GBA=0 -D PLATFORM_SDL=1 -D PLATFORM_WIN32=0 $(SDL_MINGW_FLAGS)
 	else ifeq ($(PLATFORM),win32)
 		CPPFLAGS += -D TITLE_BAR=$(BUILD_NAME).$(PLATFORM) -D PLATFORM_GBA=0 -D PLATFORM_SDL=0 -D PLATFORM_WIN32=1
+	else ifeq ($(PLATFORM),ps3)
+		CPPFLAGS += -D TITLE_BAR=$(BUILD_NAME).$(PLATFORM) -D PLATFORM_GBA=0 -D PLATFORM_SDL=0 -D PLATFORM_WIN32=0 -D PLATFORM_PS3=1
+		CPPFLAGS += -I$(PSL1GHT)/ppu/include -I$(PSL1GHT)/ppu/include/tiny3d
+		CC1FLAGS := $(filter-out -Werror,$(CC1FLAGS)) -Wno-error
+		LDFLAGS += -z muldefs
 	endif
 
 	ifeq ($(CPU_ARCH),i386)
@@ -311,6 +325,8 @@ else ifeq ($(PLATFORM),sdl_win32)
     LIBS := -mwin32 -lkernel32 -lwinmm -lmingw32 -lxinput $(SDL_MINGW_LIBS)
 else ifeq ($(PLATFORM), win32)
     LIBS := -mwin32 -lkernel32 -lwinmm -lgdi32 -lxinput -lopengl32 $(LIBABGSYSCALL_LIBS)
+else ifeq ($(PLATFORM),ps3)
+    LIBS := -L$(PSL1GHT)/ppu/lib -ltiny3d -lgcm_sys -lrsx -lsysutil -lio -lmmelf -lvideomode -lrt -lvpcomp
 endif
 
 #### MAIN TARGETS ####
@@ -358,8 +374,8 @@ ifeq ($(PLATFORM),gba)
 $(C_BUILDDIR)/lib/m4a/m4a.o: CC1 := $(CC1_OLD)
 $(C_BUILDDIR)/lib/m4a/m4a.o: PROLOGUE_FIX :=
 # Use `-O1` for agb_flash libs, as these were also prebuilt
-$(C_BUILDDIR)/lib/agb_flash/agb_flash.o:  CC1FLAGS := -O1 -mthumb-interwork -Werror
-$(C_BUILDDIR)/lib/agb_flash/agb_flash%.o: CC1FLAGS := -O1 -mthumb-interwork -Werror
+$(C_BUILDDIR)/lib/agb_flash/agb_flash.o:  CC1FLAGS := -O1 -mthumb-interwork
+$(C_BUILDDIR)/lib/agb_flash/agb_flash%.o: CC1FLAGS := -O1 -mthumb-interwork
 endif
 
 #### Main Targets ####
@@ -416,6 +432,8 @@ sdl_win32:
 
 win32: ; @$(MAKE) PLATFORM=win32 CPU_ARCH=i386
 
+ps3: ; @$(MAKE) PLATFORM=ps3 CPU_ARCH=ppu
+
 #### RECIPES ####
 
 include songs.mk
@@ -467,7 +485,7 @@ ifeq ($(PLATFORM),gba)
 else
 	@echo "$(CC1) $(MAP_FLAG)$(MAP) <objects> <lib> -o $@"
 	@touch $(ROOT_DIR)/$(MAP)
-	@cd $(OBJ_DIR) && $(CC1) $(MAP_FLAG)$(ROOT_DIR)/$(MAP) $(OBJS_REL) $(LIBS) -o $(ROOT_DIR)/$@
+	@cd $(OBJ_DIR) && $(CC1) $(LDFLAGS) $(MAP_FLAG)$(ROOT_DIR)/$(MAP) $(OBJS_REL) $(LIBS) -o $(ROOT_DIR)/$@
 endif
 
 $(ROM): $(ELF)
@@ -476,6 +494,8 @@ ifeq ($(PLATFORM),gba)
 	$(FIX) $@ -p -t"$(TITLE)" -c$(GAME_CODE) -m$(MAKER_CODE) -r$(GAME_REVISION) --silent
 else ifeq ($(PLATFORM),sdl)
 	cp $< $@
+else ifeq ($(PLATFORM),ps3)
+	fself $< $@
 else
 	$(OBJCOPY) -O pei-x86-64 $< $@
 endif
