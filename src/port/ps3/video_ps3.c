@@ -28,6 +28,23 @@ static u32 *texture_mem = NULL;
 static u32 texture_offset = 0;
 static bool is_video_initialized = false;
 
+/* Texture loading helper */
+void* PS3_LoadTexture(const char* filename, u32 *width, u32 *height) {
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) return NULL;
+
+    fseek(fp, 0, SEEK_END);
+    size_t size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    void *mem = tiny3d_AllocTexture(size);
+    if (mem) {
+        fread(mem, 1, size, fp);
+    }
+    fclose(fp);
+    return mem;
+}
+
 extern uint16_t gameImage[DISPLAY_WIDTH * DISPLAY_HEIGHT];
 extern IntrFunc gIntrTable[16];
 
