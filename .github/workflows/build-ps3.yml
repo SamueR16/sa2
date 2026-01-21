@@ -9,7 +9,7 @@ jobs:
   build-ps3:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ps3dev/psl1ght:master
+      image: ghcr.io/reswitched/pypitoolchain:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
